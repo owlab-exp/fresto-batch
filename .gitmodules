@@ -1,0 +1,6 @@
+[submodule "fresto-events"]
+	path = fresto-events
+	url = https://github.com/owlab/fresto-events.git
+[submodule "cascading-thrift"]
+	path = cascading-thrift
+	url = https://github.com/Cascading/cascading-thrift.git
