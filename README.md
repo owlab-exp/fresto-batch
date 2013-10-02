@@ -1,0 +1,4 @@
+fresto-batch
+==============
+
+Batch operations
