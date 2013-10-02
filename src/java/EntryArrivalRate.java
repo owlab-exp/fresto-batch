@@ -78,13 +78,16 @@ public class EntryArrivalRate {
 					.predicate(new ToSecondBucket(), "?timestamp").out("?second-bucket")
 					.predicate(new Count(), "?count");
 
+		Api.execute(sink, rollupBySecond);
+
 		// Sums by minute, ...
 		Subquery arrivals = new Subquery("?granularity", "?bucket", "?total-count")
 					.predicate(rollupBySecond, "?second-bucket", "?count")
 					.predicate(new EmitGranularities(), "?second-bucket").out("?granularity", "?bucket")
 					.predicate(new Sum(), "?count").out("?total-count");
 
-		Api.execute(sink, arrivals);
+		// Dplicate?
+		//Api.execute(sink, arrivals);
 	}
 
 	public static class ExtractEntryCallTimestampFields extends CascalogFunction {
