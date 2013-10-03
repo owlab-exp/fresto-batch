@@ -93,7 +93,7 @@ public class InjestStep {
 		//Pail<FrestoData> masterPail = Pail.create("hdfs://fresto1.owlab.com:9000/fresto/master", new SplitFrestoDataPailStructure());
 		Pail<FrestoData> masterPail = new Pail<FrestoData>(MASTER_PATH);
 		masterPail.absorb(shreddedPail);
-		masterPail.consolidate();
+		//masterPail.consolidate();
 	
 	}
 	
