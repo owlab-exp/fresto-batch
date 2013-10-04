@@ -17,6 +17,11 @@ import jcascalog.Subquery;
 import jcascalog.op.Count;
 import jcascalog.op.Sum;
 
+import elephantdb.jcascalog.EDB;
+import elephantdb.DomainSpec;
+import elephantdb.partition.HashModScheme;
+import elephantdb.persistence.JavaBerkDB;
+
 import com.backtype.hadoop.pail.Pail;
 import com.backtype.hadoop.pail.PailSpec;
 import com.backtype.hadoop.pail.PailStructure;
@@ -48,7 +53,8 @@ public class EntryArrivalRate {
 	    //    makeSnapshot();
 	    //    appendToMaster();
 	    //}
-	    test01();
+	    //test01();
+	    test02();
 	}
 	
 	public static void test01() {
@@ -68,6 +74,53 @@ public class EntryArrivalRate {
 		hadoopConfig.set("fs.default.name", "hdfs://fresto1.owlab.com:9000");
 		// End common block of every job
 
+		Tap sink = new StdoutTap();
+		Tap source = splitFrestoDataTap(MASTER_PATH);
+		// Sum by seconds
+		Subquery rollupBySecond = new Subquery("?second-bucket", "?count")
+					.predicate(source, "_", "?data")
+					.predicate(new ExtractEntryCallTimestampFields(), "?data").out("?timestamp")
+					//.predicate(new ToMinuteBucket(), "?timestamp").out("?minute-bucket")
+					.predicate(new ToSecondBucket(), "?timestamp").out("?second-bucket")
+					.predicate(new Count(), "?count");
+
+		Api.execute(sink, rollupBySecond);
+
+		// Sums by minute, ...
+		Subquery arrivals = new Subquery("?granularity", "?bucket", "?total-count")
+					.predicate(rollupBySecond, "?second-bucket", "?count")
+					.predicate(new EmitGranularities(), "?second-bucket").out("?granularity", "?bucket")
+					.predicate(new Sum(), "?count").out("?total-count");
+
+		// Dplicate?
+		//Api.execute(sink, arrivals);
+	}
+
+	public static void test02() {
+
+		// Start common block of every job
+		System.setProperty("HADOOP_USER_NAME", "hdfs");
+	
+		Map conf = new HashMap();
+		String sers = "backtype.hadoop.ThriftSerialization";
+		sers += ",";
+		sers += "org.apache.hadoop.io.serializer.WritableSerialization";
+		conf.put("io.serializations", sers);
+		Api.setApplicationConf(conf);
+	
+	
+		Configuration hadoopConfig = new Configuration();
+		hadoopConfig.set("fs.default.name", "hdfs://fresto1.owlab.com:9000");
+		// End common block of every job
+
+
+		EDB.makeKeyValTap("hdfs://fresto1.owlab.com:9000/fresto/output", 
+				new DomainSpec(new JavaBerkDB(),
+					new HashModScheme(),
+					32));
+
+
+		// --------------
 		Tap sink = new StdoutTap();
 		Tap source = splitFrestoDataTap(MASTER_PATH);
 		// Sum by seconds
